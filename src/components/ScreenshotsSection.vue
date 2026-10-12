@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { X, ChevronLeft, ChevronRight, FlaskConical } from 'lucide-vue-next'
+import { X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { asset } from '../utils/assets'
 
 interface Shot {
@@ -8,26 +8,29 @@ interface Shot {
   title: string
   description: string
 }
-
 /* ── Свайпы в лайтбоксе (pointer events) ─── */
 const dragX = ref(0)
+const dragY = ref(0)
 const dragging = ref(false)
 let startX = 0
 let startY = 0
 let startTime = 0
-let isHorizontalSwipe = false
+let axis: 'none' | 'horizontal' | 'vertical' = 'none'
 
-const SWIPE_THRESHOLD = 60   // px
-const SWIPE_VELOCITY = 0.4   // px/ms
+const SWIPE_H_THRESHOLD = 60    // px — переключение
+const SWIPE_H_VELOCITY = 0.4    // px/ms
+const SWIPE_DOWN_THRESHOLD = 100 // px — закрытие
+const SWIPE_DOWN_VELOCITY = 0.6  // px/ms
 
 function onPointerDown(e: PointerEvent) {
   if (e.pointerType === 'mouse' && e.button !== 0) return
   startX = e.clientX
   startY = e.clientY
   startTime = performance.now()
-  isHorizontalSwipe = false
+  axis = 'none'
   dragging.value = true
   dragX.value = 0
+  dragY.value = 0
   ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
 }
 
@@ -36,38 +39,60 @@ function onPointerMove(e: PointerEvent) {
   const dx = e.clientX - startX
   const dy = e.clientY - startY
 
-  if (!isHorizontalSwipe) {
+  if (axis === 'none') {
     if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
-    isHorizontalSwipe = Math.abs(dx) > Math.abs(dy)
+    axis = Math.abs(dx) > Math.abs(dy) ? 'horizontal' : 'vertical'
   }
 
-  if (!isHorizontalSwipe) return
-
-  e.preventDefault()
-  dragX.value = dx
+  if (axis === 'horizontal') {
+    e.preventDefault()
+    dragX.value = dx
+  } else {
+    e.preventDefault()
+    // Тянем только вниз, вверх — пружиним с сопротивлением
+    dragY.value = dy > 0 ? dy : dy * 0.25
+  }
 }
 
 function onPointerUp(e: PointerEvent) {
   if (!dragging.value) return
   dragging.value = false
 
-  if (!isHorizontalSwipe) {
-    dragX.value = 0
-    return
-  }
+  if (axis === 'horizontal') {
+    const dx = dragX.value
+    const dt = performance.now() - startTime
+    const velocity = Math.abs(dx) / Math.max(dt, 1)
+    const shouldSwitch =
+      Math.abs(dx) > SWIPE_H_THRESHOLD || velocity > SWIPE_H_VELOCITY
 
-  const dx = dragX.value
-  const dt = performance.now() - startTime
-  const velocity = Math.abs(dx) / Math.max(dt, 1)
-  const shouldSwitch = Math.abs(dx) > SWIPE_THRESHOLD || velocity > SWIPE_VELOCITY
+    if (shouldSwitch) {
+      if (dx < 0) next()
+      else prev()
+    }
+  } else if (axis === 'vertical') {
+    const dy = dragY.value
+    const dt = performance.now() - startTime
+    const velocity = dy / Math.max(dt, 1)
+    const shouldClose =
+      dy > SWIPE_DOWN_THRESHOLD || velocity > SWIPE_DOWN_VELOCITY
 
-  if (shouldSwitch) {
-    if (dx < 0) next()
-    else prev()
+    if (shouldClose) {
+      closeLightbox()
+      // Небольшая задержка, чтобы Transition успел проиграть
+      setTimeout(() => {
+        dragY.value = 0
+      }, 300)
+      try {
+        ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+      } catch { /* уже отпущен */ }
+      axis = 'none'
+      return
+    }
   }
 
   dragX.value = 0
-  isHorizontalSwipe = false
+  dragY.value = 0
+  axis = 'none'
 
   try {
     ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
@@ -253,8 +278,12 @@ onUnmounted(() => {
           <div
             class="lightbox__stage"
             :style="{
-              transform: dragX !== 0 ? `translateX(${dragX}px)` : undefined,
+              transform:
+                dragX !== 0 || dragY !== 0
+                  ? `translate(${dragX}px, ${dragY}px) scale(${Math.max(1 - Math.abs(dragY) / 1500, 0.92)})`
+                  : undefined,
               transition: dragging ? 'none' : undefined,
+              opacity: dragY > 0 ? Math.max(1 - dragY / 600, 0.4) : 1,
             }"
             @click.stop
             @pointerdown="onPointerDown"
@@ -445,9 +474,24 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   max-height: 100%;
-  transition: transform var(--dur-medium) var(--ease-emphasized);
-  touch-action: pan-y;
-  will-change: transform;
+  transition: transform var(--dur-medium) var(--ease-emphasized),
+              opacity var(--dur-medium) var(--ease-standard);
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  will-change: transform, opacity;
+}
+
+.lightbox__stage:active {
+  cursor: grabbing;
+}
+
+.lightbox__img {
+  /* ...существующие свойства... */
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
 }
 
 .lightbox__img {
