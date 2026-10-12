@@ -1,12 +1,79 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
+import { X, ChevronLeft, ChevronRight, FlaskConical } from 'lucide-vue-next'
 import { asset } from '../utils/assets'
 
 interface Shot {
   src: string
   title: string
   description: string
+}
+
+/* ── Свайпы в лайтбоксе (pointer events) ─── */
+const dragX = ref(0)
+const dragging = ref(false)
+let startX = 0
+let startY = 0
+let startTime = 0
+let isHorizontalSwipe = false
+
+const SWIPE_THRESHOLD = 60   // px
+const SWIPE_VELOCITY = 0.4   // px/ms
+
+function onPointerDown(e: PointerEvent) {
+  if (e.pointerType === 'mouse' && e.button !== 0) return
+  startX = e.clientX
+  startY = e.clientY
+  startTime = performance.now()
+  isHorizontalSwipe = false
+  dragging.value = true
+  dragX.value = 0
+  ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
+}
+
+function onPointerMove(e: PointerEvent) {
+  if (!dragging.value) return
+  const dx = e.clientX - startX
+  const dy = e.clientY - startY
+
+  if (!isHorizontalSwipe) {
+    if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return
+    isHorizontalSwipe = Math.abs(dx) > Math.abs(dy)
+  }
+
+  if (!isHorizontalSwipe) return
+
+  e.preventDefault()
+  dragX.value = dx
+}
+
+function onPointerUp(e: PointerEvent) {
+  if (!dragging.value) return
+  dragging.value = false
+
+  if (!isHorizontalSwipe) {
+    dragX.value = 0
+    return
+  }
+
+  const dx = dragX.value
+  const dt = performance.now() - startTime
+  const velocity = Math.abs(dx) / Math.max(dt, 1)
+  const shouldSwitch = Math.abs(dx) > SWIPE_THRESHOLD || velocity > SWIPE_VELOCITY
+
+  if (shouldSwitch) {
+    if (dx < 0) next()
+    else prev()
+  }
+
+  dragX.value = 0
+  isHorizontalSwipe = false
+
+  try {
+    ;(e.currentTarget as HTMLElement).releasePointerCapture(e.pointerId)
+  } catch {
+    /* уже отпущен */
+  }
 }
 
 const shots: Shot[] = [
@@ -130,6 +197,9 @@ onUnmounted(() => {
       <header class="section-header">
         <span class="section-header__label">PREVIEW</span>
         <h2 class="section-header__title">Как это выглядит</h2>
+        <p class="section-header__note mono">
+          <span>данные на скриншотах вымышленные — демонстрация интерфейса</span>
+        </p>
       </header>
     </div>
 
@@ -180,11 +250,23 @@ onUnmounted(() => {
             <ChevronLeft :size="28" />
           </button>
 
-          <div class="lightbox__stage" @click.stop>
+          <div
+            class="lightbox__stage"
+            :style="{
+              transform: dragX !== 0 ? `translateX(${dragX}px)` : undefined,
+              transition: dragging ? 'none' : undefined,
+            }"
+            @click.stop
+            @pointerdown="onPointerDown"
+            @pointermove="onPointerMove"
+            @pointerup="onPointerUp"
+            @pointercancel="onPointerUp"
+          >
             <img
               :src="shots[activeIndex].src"
               :alt="shots[activeIndex].title"
               class="lightbox__img"
+              draggable="false"
             />
             <div class="lightbox__caption mono">
               {{ shots[activeIndex].title }}
@@ -363,6 +445,9 @@ onUnmounted(() => {
   align-items: center;
   gap: 16px;
   max-height: 100%;
+  transition: transform var(--dur-medium) var(--ease-emphasized);
+  touch-action: pan-y;
+  will-change: transform;
 }
 
 .lightbox__img {
