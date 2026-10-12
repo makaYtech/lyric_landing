@@ -1,0 +1,221 @@
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  scroll-behavior: smooth;
+  color-scheme: dark light;
+}
+
+html[data-theme='light'] {
+  color-scheme: light;
+}
+
+body {
+  font-family: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--md-on-surface);
+  background-color: var(--md-surface-dim);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  transition: background-color var(--dur-medium) var(--ease-standard),
+              color var(--dur-medium) var(--ease-standard);
+}
+
+#app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Моноширинный шрифт для акцентов */
+.mono {
+  font-family: '0xProto', ui-monospace, 'SF Mono', Menlo, monospace;
+  font-feature-settings: 'liga' 0, 'calt' 0;
+}
+
+/* Заголовки */
+h1, h2, h3, h4 {
+  font-family: '0xProto', monospace;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+  color: var(--md-on-surface);
+}
+
+h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+h2 { font-size: clamp(1.5rem, 3.5vw, 2.25rem); }
+h3 { font-size: 1.25rem; }
+
+p {
+  color: var(--md-on-surface-variant);
+}
+
+a {
+  color: var(--md-link);
+  text-decoration: none;
+  transition: opacity var(--dur-short) var(--ease-standard);
+}
+
+a:hover {
+  opacity: 0.8;
+}
+
+/* Селекция в цветах Gruvbox */
+::selection {
+  background: var(--yellow);
+  color: var(--bg-hard);
+}
+
+/* Скроллбар */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--md-surface-dim);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--surface-2);
+  border-radius: var(--r-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--surface-3);
+}
+
+/* Контейнер */
+.container {
+  width: 100%;
+  max-width: 1120px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+@media (max-width: 640px) {
+  .container { padding: 0 16px; }
+}
+
+/* Секция */
+.section {
+  padding: 80px 0;
+}
+
+@media (max-width: 640px) {
+  .section { padding: 56px 0; }
+}
+
+/* Заголовок секции в стиле «techy» */
+.section-header {
+  margin-bottom: 48px;
+}
+
+.section-header__label {
+  font-family: '0xProto', monospace;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  color: var(--md-on-surface-variant);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 12px;
+  opacity: 0.7;
+}
+
+.section-header__title {
+  font-family: '0xProto', monospace;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+  font-weight: 700;
+  color: var(--md-on-surface);
+}
+
+/* Уменьшение анимаций для тех, кто не любит */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ── Кнопки Material 3 ────────────────────── */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 10px 24px;
+  font-family: '0xProto', monospace;
+  font-size: 0.9375rem;
+  font-weight: 500;
+  line-height: 1;
+  border-radius: var(--r-full);
+  border: 1px solid transparent;
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  position: relative;
+  overflow: hidden;
+  transition: box-shadow var(--dur-short) var(--ease-standard),
+              background-color var(--dur-short) var(--ease-standard),
+              transform var(--dur-short) var(--ease-standard);
+}
+
+.btn:active {
+  transform: scale(0.98);
+}
+
+.btn--filled {
+  background: var(--md-primary);
+  color: var(--md-on-primary);
+}
+
+.btn--filled:hover {
+  opacity: 1;
+  box-shadow: var(--elev-2);
+}
+
+.btn--outlined {
+  background: transparent;
+  color: var(--md-primary);
+  border-color: var(--md-outline);
+}
+
+.btn--outlined:hover {
+  background: color-mix(in srgb, var(--md-primary) 8%, transparent);
+  opacity: 1;
+}
+
+.btn--lg {
+  padding: 14px 28px;
+  font-size: 1rem;
+}
+
+.btn--disabled {
+  opacity: 0.6;
+  cursor: wait;
+}
+
+/* Ripple-эффект */
+.btn::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-medium) var(--ease-standard);
+}
+
+.btn:hover::after {
+  opacity: 0.06;
+}
