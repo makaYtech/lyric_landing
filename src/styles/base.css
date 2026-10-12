@@ -219,3 +219,13 @@ a:hover {
 .btn:hover::after {
   opacity: 0.06;
 }
+
+section[id] {
+  scroll-margin-top: 80px;
+}
+
+/* Блокировка скролла при открытом оверлее */
+html.no-scroll,
+html.no-scroll body {
+  overflow: hidden;
+}

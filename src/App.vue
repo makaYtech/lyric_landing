@@ -2,7 +2,9 @@
 import { onMounted } from 'vue'
 import { useTheme } from './composables/useTheme'
 import AppBar from './components/AppBar.vue'
+import SectionNav from './components/SectionNav.vue'
 import HeroSection from './components/HeroSection.vue'
+import ScreenshotsSection from './components/ScreenshotsSection.vue'
 import PlatformsGrid from './components/PlatformsGrid.vue'
 import FeaturesSection from './components/FeaturesSection.vue'
 import SecuritySection from './components/SecuritySection.vue'
@@ -24,6 +26,7 @@ onMounted(() => {
     <AppBar />
     <main>
       <HeroSection />
+      <ScreenshotsSection />
       <PlatformsGrid />
       <FeaturesSection />
       <SecuritySection />
@@ -33,6 +36,7 @@ onMounted(() => {
       <AboutSection />
     </main>
     <FooterSection />
+    <SectionNav />
   </div>
 </template>
 

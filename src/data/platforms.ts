@@ -27,6 +27,14 @@ export const platforms: Platform[] = [
     descriptionEn: 'via web version',
   },
   {
+    id: 'web',
+    name: 'Web',
+    icon: Globe,
+    available: false,
+    description: 'скоро',
+    descriptionEn: 'soon',
+  },
+  {
     id: 'windows',
     name: 'Windows',
     icon: Monitor,
@@ -49,13 +57,5 @@ export const platforms: Platform[] = [
     available: false,
     description: 'в разработке',
     descriptionEn: 'in development',
-  },
-  {
-    id: 'web',
-    name: 'Web',
-    icon: Globe,
-    available: false,
-    description: 'скоро',
-    descriptionEn: 'soon',
-  },
+  }
 ]
