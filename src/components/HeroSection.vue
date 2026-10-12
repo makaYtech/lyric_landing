@@ -2,6 +2,9 @@
 import { onMounted } from 'vue'
 import { Download, Github, AlertCircle, Loader2 } from 'lucide-vue-next'
 import { useReleases } from '../composables/useReleases'
+import { asset } from '../utils/assets'
+
+const mascotSrc = asset('logo-512.png')
 
 const {
   release,
@@ -24,9 +27,9 @@ onMounted(() => {
     <div class="container hero__inner">
       <div class="hero__art">
         <img
-          src="/lyric_landing/logo-512.png"
-          alt="Маскот Лирики"
-          class="hero__mascot"
+        :src="mascotSrc"
+        alt="Маскот Лирики"
+        class="hero__mascot"
         />
       </div>
 

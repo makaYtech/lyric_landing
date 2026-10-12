@@ -2,6 +2,9 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { Github, Sun, Moon } from 'lucide-vue-next'
 import { useTheme } from '../composables/useTheme'
+import { asset } from '../utils/assets'
+
+const logoSrc = asset('logo-512.png')
 
 const { theme, toggleTheme } = useTheme()
 const scrolled = ref(false)
@@ -25,10 +28,10 @@ onUnmounted(() => {
     <div class="container appbar__inner">
       <a href="#top" class="appbar__brand">
         <img
-          src="/lyric_landing/logo-512.png"
-          alt="Лирика"
-          class="appbar__logo"
-        />
+            :src="logoSrc"
+            alt="Лирика"
+            class="appbar__logo"
+            />
         <span class="appbar__name mono">Лирика</span>
       </a>
 

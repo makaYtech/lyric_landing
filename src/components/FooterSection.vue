@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import { Github, Package, ExternalLink } from 'lucide-vue-next'
+import { asset } from '../utils/assets'
+
+const logoSrc = asset('logo-512.png')
 
 const year = new Date().getFullYear()
 </script>
@@ -9,9 +12,9 @@ const year = new Date().getFullYear()
     <div class="container footer__inner">
       <div class="footer__brand">
         <img
-          src="/lyric_landing/logo-512.png"
-          alt="Лирика"
-          class="footer__logo"
+        :src="logoSrc"
+        alt="Лирика"
+        class="footer__logo"
         />
         <div>
           <div class="footer__name mono">Лирика</div>
