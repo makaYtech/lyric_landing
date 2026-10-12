@@ -2,12 +2,9 @@
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { X, ChevronLeft, ChevronRight } from 'lucide-vue-next'
 import { asset } from '../utils/assets'
+import { useTheme } from '../composables/useTheme'
+const { theme } = useTheme()
 
-interface Shot {
-  src: string
-  title: string
-  description: string
-}
 /* ── Свайпы в лайтбоксе (pointer events) ─── */
 const dragX = ref(0)
 const dragY = ref(0)
@@ -101,28 +98,38 @@ function onPointerUp(e: PointerEvent) {
   }
 }
 
+interface Shot {
+  slug: string
+  title: string
+  description: string
+}
+
 const shots: Shot[] = [
   {
-    src: asset('screens/screen-profile.png'),
+    slug: 'screen-profile',
     title: 'Профиль',
     description: 'ФИО, класс, учителя, кабинеты, нагрузка',
   },
   {
-    src: asset('screens/screen-grades.png'),
+    slug: 'screen-grades',
     title: 'Оценки',
     description: 'По предметам и периодам, со средним баллом',
   },
   {
-    src: asset('screens/screen-schedule.png'),
+    slug: 'screen-schedule',
     title: 'Расписание',
     description: 'На любую неделю, с парами и звонками',
   },
   {
-    src: asset('screens/screen-homework.png'),
+    slug: 'screen-homework',
     title: 'Домашка',
     description: 'По дню выдачи или дедлайну, с вложениями',
   },
 ]
+
+function shotSrc(s: Shot): string {
+  return asset(`screens/${theme.value}/${s.slug}.png`)
+}
 
 const galleryEl = ref<HTMLElement | null>(null)
 const activeIndex = ref<number | null>(null)
@@ -232,7 +239,7 @@ onUnmounted(() => {
       <div ref="galleryEl" class="gallery">
         <figure
           v-for="(s, i) in shots"
-          :key="s.src"
+          :key="s.slug"
           class="shot"
           role="button"
           tabindex="0"
@@ -241,13 +248,13 @@ onUnmounted(() => {
           @keydown.enter="openLightbox(i)"
           @keydown.space.prevent="openLightbox(i)"
         >
-          <div class="shot__frame">
-            <img :src="s.src" :alt="s.title" class="shot__img" loading="lazy" />
-          </div>
-          <figcaption class="shot__caption">
-            <div class="shot__title mono">{{ s.title }}</div>
-            <div class="shot__desc">{{ s.description }}</div>
-          </figcaption>
+            <div class="shot__frame">
+              <img :src="shotSrc(s)" :alt="s.title" class="shot__img" loading="lazy" />
+            </div>
+            <figcaption class="shot__caption">
+              <div class="shot__title mono">{{ s.title }}</div>
+              <div class="shot__desc">{{ s.description }}</div>
+            </figcaption>
         </figure>
       </div>
     </div>
@@ -292,7 +299,7 @@ onUnmounted(() => {
             @pointercancel="onPointerUp"
           >
             <img
-              :src="shots[activeIndex].src"
+              :src="shotSrc(shots[activeIndex])"
               :alt="shots[activeIndex].title"
               class="lightbox__img"
               draggable="false"
@@ -602,6 +609,10 @@ onUnmounted(() => {
     right: 12px;
     width: 40px;
     height: 40px;
+  }
+  .shot__img,
+  .lightbox__img {
+    transition: opacity var(--dur-medium) var(--ease-standard);
   }
 }
 </style>
