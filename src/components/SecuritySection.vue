@@ -69,10 +69,10 @@ const points: Point[] = [
         <p>
           Код приложения открыт — можно проверить самостоятельно:
           <a
-            href="https://github.com/makaYtech/lyric_apk"
+            href="https://github.com/makaYtech/lyric"
             target="_blank"
             rel="noopener"
-          >github.com/makaYtech/lyric_apk</a>
+          >github.com/makaYtech/lyric</a>
         </p>
       </aside>
     </div>

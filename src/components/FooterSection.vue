@@ -24,7 +24,7 @@ const year = new Date().getFullYear()
 
       <nav class="footer__links">
         <a
-          href="https://github.com/makaYtech/lyric_apk"
+          href="https://github.com/makaYtech/lyric"
           target="_blank"
           rel="noopener"
         >
