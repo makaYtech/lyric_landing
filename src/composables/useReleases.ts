@@ -1,126 +1,135 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
-const REPO = 'makaYtech/lyric_apk'
-const API_URL = `https://api.github.com/repos/${REPO}/releases/latest`
-const CACHE_KEY = 'lyric-latest-release'
+const BASE_URL = 'https://raw.githubusercontent.com/makaYtech/lyric_apk/main/docs'
+const CACHE_KEY = 'lyric-manifests-cache'
 const CACHE_TTL = 10 * 60 * 1000 // 10 минут
 
-export interface ReleaseAsset {
-  name: string
-  browser_download_url: string
-  size: number
+export interface AndroidManifest {
+  version: string
+  apk_name: string
+  changelog: string
+  size_bytes: number
+  sha256: string
 }
 
-export interface Release {
-  tag_name: string
-  name: string
-  published_at: string
-  html_url: string
-  body: string
-  assets: ReleaseAsset[]
+export interface DesktopManifest {
+  version: string
+  download_url: string
+  file_size: number
+  sha256: string
+  release_notes: string
 }
 
-interface CachedRelease {
-  data: Release
-  ts: number
-}
-
-const release = ref<Release | null>(null)
+// Состояния
+const androidRelease = ref<AndroidManifest | null>(null)
+const windowsRelease = ref<DesktopManifest | null>(null)
+const linuxRelease = ref<DesktopManifest | null>(null)
 const loading = ref(false)
 const error = ref<string | null>(null)
 
-function readCache(): Release | null {
-  try {
-    const raw = sessionStorage.getItem(CACHE_KEY)
-    if (!raw) return null
-    const parsed: CachedRelease = JSON.parse(raw)
-    if (Date.now() - parsed.ts > CACHE_TTL) {
-      sessionStorage.removeItem(CACHE_KEY)
-      return null
-    }
-    return parsed.data
-  } catch {
-    return null
-  }
+// Определение ОС
+export type OS = 'windows' | 'linux' | 'macos' | 'android' | 'ios' | 'unknown'
+
+function detectOS(): OS {
+  if (typeof navigator === 'undefined') return 'unknown'
+  const ua = navigator.userAgent.toLowerCase()
+  if (ua.includes('android')) return 'android'
+  if (ua.includes('iphone') || ua.includes('ipad')) return 'ios'
+  if (ua.includes('win')) return 'windows'
+  if (ua.includes('mac')) return 'macos'
+  if (ua.includes('linux')) return 'linux'
+  return 'unknown'
 }
 
-function writeCache(data: Release) {
-  try {
-    const payload: CachedRelease = { data, ts: Date.now() }
-    sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload))
-  } catch {
-    // sessionStorage может быть недоступен — игнорируем
-  }
-}
+const currentOS = ref<OS>(detectOS())
 
-async function fetchLatestRelease(force = false): Promise<void> {
+async function fetchLatestManifests(force = false) {
   if (loading.value) return
+  
+  // Проверка кэша
   if (!force) {
-    const cached = readCache()
-    if (cached) {
-      release.value = cached
-      return
-    }
+    try {
+      const raw = sessionStorage.getItem(CACHE_KEY)
+      if (raw) {
+        const parsed = JSON.parse(raw)
+        if (Date.now() - parsed.ts < CACHE_TTL) {
+          androidRelease.value = parsed.android
+          windowsRelease.value = parsed.windows
+          linuxRelease.value = parsed.linux
+          return
+        }
+      }
+    } catch { /* ignore cache errors */ }
   }
 
   loading.value = true
   error.value = null
 
   try {
-    const res = await fetch(API_URL, {
-      headers: { Accept: 'application/vnd.github+json' },
-    })
-    if (!res.ok) {
-      throw new Error(`GitHub API: ${res.status} ${res.statusText}`)
+    const [resAndroid, resWin, resLinux] = await Promise.all([
+      fetch(`${BASE_URL}/update.json`),
+      fetch(`${BASE_URL}/windows_update.json`),
+      fetch(`${BASE_URL}/linux_update.json`)
+    ])
+
+    // Android
+    if (resAndroid.ok) {
+      const data = await resAndroid.json()
+      androidRelease.value = data.release // берем из канала release
     }
-    const data: Release = await res.json()
-    release.value = data
-    writeCache(data)
+
+    // Windows
+    if (resWin.ok) {
+      windowsRelease.value = await resWin.json()
+    }
+
+    // Linux
+    if (resLinux.ok) {
+      linuxRelease.value = await resLinux.json()
+    }
+
+    // Сохраняем в кэш
+    sessionStorage.setItem(CACHE_KEY, JSON.stringify({
+      ts: Date.now(),
+      android: androidRelease.value,
+      windows: windowsRelease.value,
+      linux: linuxRelease.value
+    }))
+
   } catch (e) {
-    error.value = e instanceof Error ? e.message : 'Не удалось получить релиз'
+    error.value = e instanceof Error ? e.message : 'Не удалось получить данные о релизах'
   } finally {
     loading.value = false
   }
 }
 
-/** Находит APK-файл в ассетах последнего релиза */
-function getApkAsset(r: Release | null): ReleaseAsset | null {
-  if (!r) return null
-  return r.assets.find((a) => a.name.endsWith('.apk')) ?? null
-}
+// Ссылка для Android (собирается из имени файла и версии)
+const androidDownloadUrl = computed(() => {
+  if (!androidRelease.value) return null
+  const { version, apk_name } = androidRelease.value
+  return `https://github.com/makaYtech/lyric_apk/releases/download/v${version}/${apk_name}`
+})
 
-/** Красивая версия без префикса «v» */
-function formatVersion(tag: string): string {
-  return tag.replace(/^v/, '')
-}
-
-/** Дата в формате «12 окт 2026» */
-function formatDate(iso: string): string {
-  try {
-    return new Intl.DateTimeFormat('ru-RU', {
-      day: 'numeric',
-      month: 'short',
-      year: 'numeric',
-    }).format(new Date(iso))
-  } catch {
-    return iso
-  }
-}
-
-/** Размер файла в МБ */
+// Форматирование размера
 function formatSize(bytes: number): string {
   return (bytes / 1024 / 1024).toFixed(1) + ' МБ'
 }
 
+function formatVersion(tag: string): string {
+  return tag.replace(/^v/, '')
+}
+
 export function useReleases() {
   return {
-    release,
+    androidRelease,
+    windowsRelease,
+    linuxRelease,
+    androidDownloadUrl,
+    currentOS,
     loading,
     error,
-    fetchLatestRelease,
-    getApkAsset,
-    formatVersion,
-    formatDate,
+    fetchLatestManifests,
     formatSize,
+    formatVersion
   }
 }

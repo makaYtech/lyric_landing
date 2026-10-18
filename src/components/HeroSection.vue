@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { onMounted } from 'vue'
+import { onMounted, computed } from 'vue'
 import { Download, Github, AlertCircle, Loader2 } from 'lucide-vue-next'
 import { useReleases } from '../composables/useReleases'
 import { asset } from '../utils/assets'
@@ -7,18 +7,49 @@ import { asset } from '../utils/assets'
 const mascotSrc = asset('logo-512.png')
 
 const {
-  release,
+  androidRelease,
+  windowsRelease,
+  linuxRelease,
+  androidDownloadUrl,
+  currentOS,
   loading,
   error,
-  fetchLatestRelease,
-  getApkAsset,
-  formatVersion,
-  formatDate,
+  fetchLatestManifests,
   formatSize,
+  formatVersion,
 } = useReleases()
 
 onMounted(() => {
-  fetchLatestRelease()
+  fetchLatestManifests()
+})
+
+// Логика умной кнопки
+const primaryAction = computed(() => {
+  if (currentOS.value === 'windows' && windowsRelease.value) {
+    return {
+      text: 'Скачать для Windows',
+      url: windowsRelease.value.download_url,
+      size: windowsRelease.value.file_size,
+      version: windowsRelease.value.version,
+    }
+  }
+  if (currentOS.value === 'linux' && linuxRelease.value) {
+    return {
+      text: 'Скачать для Linux',
+      url: linuxRelease.value.download_url,
+      size: linuxRelease.value.file_size,
+      version: linuxRelease.value.version,
+    }
+  }
+  if (androidRelease.value && androidDownloadUrl.value) {
+    return {
+      text: 'Скачать APK',
+      url: androidDownloadUrl.value,
+      size: androidRelease.value.size_bytes,
+      version: androidRelease.value.version,
+    }
+  }
+  return null
 })
 </script>
 
@@ -46,12 +77,12 @@ onMounted(() => {
 
         <div class="hero__actions">
           <a
-            v-if="release && getApkAsset(release)"
-            :href="getApkAsset(release)!.browser_download_url"
+            v-if="primaryAction"
+            :href="primaryAction.url"
             class="btn btn--filled btn--lg"
           >
             <Download :size="20" />
-            <span>Скачать APK</span>
+            <span>{{ primaryAction.text }}</span>
           </a>
 
           <button
@@ -71,7 +102,7 @@ onMounted(() => {
             class="btn btn--filled btn--lg"
           >
             <Download :size="20" />
-            <span>Скачать APK</span>
+            <span>Скачать</span>
           </a>
 
           <a
@@ -86,23 +117,16 @@ onMounted(() => {
         </div>
 
         <div class="hero__meta mono">
-          <template v-if="release">
+          <template v-if="primaryAction">
             <span class="hero__meta-item">
               <span class="hero__meta-key">version</span>
-              <span class="hero__meta-val">{{ formatVersion(release.tag_name) }}</span>
+              <span class="hero__meta-val">{{ formatVersion(primaryAction.version) }}</span>
             </span>
             <span class="hero__meta-sep">·</span>
             <span class="hero__meta-item">
-              <span class="hero__meta-key">released</span>
-              <span class="hero__meta-val">{{ formatDate(release.published_at) }}</span>
+              <span class="hero__meta-key">size</span>
+              <span class="hero__meta-val">{{ formatSize(primaryAction.size) }}</span>
             </span>
-            <template v-if="getApkAsset(release)">
-              <span class="hero__meta-sep">·</span>
-              <span class="hero__meta-item">
-                <span class="hero__meta-key">size</span>
-                <span class="hero__meta-val">{{ formatSize(getApkAsset(release)!.size) }}</span>
-              </span>
-            </template>
           </template>
 
           <span v-else-if="loading" class="hero__meta-item">

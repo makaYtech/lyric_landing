@@ -3,23 +3,33 @@ import { platforms } from '../data/platforms'
 import { useReleases } from '../composables/useReleases'
 import { Check, Clock } from 'lucide-vue-next'
 
-const { release, getApkAsset, formatVersion } = useReleases()
+const {
+  androidRelease,
+  windowsRelease,
+  linuxRelease,
+  androidDownloadUrl,
+  formatVersion
+} = useReleases()
 
 function getHref(id: string): string {
-  if (id === 'android' && release.value) {
-    const apk = getApkAsset(release.value)
-    if (apk) return apk.browser_download_url
-  }
+  if (id === 'android' && androidDownloadUrl.value) return androidDownloadUrl.value
+  if (id === 'windows' && windowsRelease.value) return windowsRelease.value.download_url
+  if (id === 'linux' && linuxRelease.value) return linuxRelease.value.download_url
   return '#'
 }
 
 function isClickable(id: string): boolean {
-  return id === 'android' && !!release.value && !!getApkAsset(release.value)
+  if (id === 'android') return !!androidDownloadUrl.value
+  if (id === 'windows') return !!windowsRelease.value
+  if (id === 'linux') return !!linuxRelease.value
+  return false
 }
 
-function androidVersion(): string {
-  if (!release.value) return ''
-  return formatVersion(release.value.tag_name)
+function getVersion(id: string): string {
+  if (id === 'android' && androidRelease.value) return androidRelease.value.version
+  if (id === 'windows' && windowsRelease.value) return windowsRelease.value.version
+  if (id === 'linux' && linuxRelease.value) return linuxRelease.value.version
+  return ''
 }
 </script>
 
@@ -50,7 +60,7 @@ function androidVersion(): string {
             <span
               v-if="p.available"
               class="platform__badge platform__badge--active"
-              :title="'Доступно: ' + androidVersion()"
+              :title="'Доступно: ' + getVersion(p.id)"
             >
               <Check :size="12" />
             </span>
