@@ -8,7 +8,6 @@ const {
   windowsRelease,
   linuxRelease,
   androidDownloadUrl,
-  formatVersion
 } = useReleases()
 
 function getHref(id: string): string {
